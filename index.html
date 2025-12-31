@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Clément Fabre | Automotive Interface</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;600&display=swap');
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+
+        /* HUD Accueil */
+        #home-ui {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            pointer-events: none;
+            transition: opacity 0.8s;
+            z-index: 100;
+        }
+        .title { font-family: 'Syncopate', sans-serif; font-size: 3rem; letter-spacing: 12px; margin: 0; }
+        .hint { color: #fbbf24; font-size: 10px; margin-top: 20px; letter-spacing: 4px; animation: blink 2s infinite; }
+
+        /* Menu Cockpit */
+        #cockpit-ui {
+            position: absolute;
+            inset: 0;
+            display: none;
+            opacity: 0;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            transition: opacity 1s;
+        }
+        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .btn-3d {
+            width: 180px; padding: 15px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #fbbf24;
+            color: #fbbf24;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        .btn-3d:hover { background: #fbbf24; color: black; transform: scale(1.1); }
+
+        /* Fenêtre de contenu (Modale) */
+        #content-modal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; max-width: 900px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #fbbf24;
+            padding: 40px;
+            display: none;
+            color: white;
+            z-index: 200;
+            backdrop-filter: blur(10px);
+        }
+        .close-btn { position: absolute; top: 10px; right: 20px; color: #fbbf24; cursor: pointer; font-size: 24px; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+    </style>
+</head>
+<body>
+
+    <div id="home-ui">
+        <h1 class="title">R5 TURBO 3E</h1>
+        <p class="hint">CLIQUEZ POUR PRENDRE LE VOLANT</p>
+    </div>
+
+    <div id="cockpit-ui">
+        <div class="grid-menu">
+            <button class="btn-3d" onclick="showContent('profil')">Profil</button>
+            <button class="btn-3d" onclick="showContent('exp')">Missions Renault</button>
+            <button class="btn-3d" onclick="showContent('projets')">Projets BUT</button>
+            <button class="btn-3d" onclick="showContent('contact')">Contact</button>
+        </div>
+    </div>
+
+    <div id="content-modal">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div id="modal-body"></div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        let scene, camera, renderer, car, armoire, isInside = false;
+        const mouse = { x: 0, y: 0 };
+        const loader = new GLTFLoader();
+
+        const sections = {
+            profil: `<h2>Clément Fabre</h2><p>Étudiant en 3ème année d'école d'ingénieur au CESI (S3E)[cite: 8]. Spécialisé en Systèmes Embarqués & Électronique[cite: 2]. Atouts : Rigueur, autonomie et proactivité[cite: 46, 249].</p>`,
+            exp: `<h2>Expérience Renault Lardy (Trescal)</h2><p>Ingénieur d'Études en alternance (2025-2028)[cite: 23, 24, 31]. Missions :</p><ul><li>Étude technique sur les Power Electronic Blocks [cite: 32].</li><li>Pilotage de modification de bancs d'essai de cyclage batterie [cite: 33].</li><li>Étude des cycleurs et simulateurs de batterie[cite: 31].</li></ul><p><i>Visualisez l'armoire électrique de test en 3D dans le cockpit.</i></p>`,
+            projets: `<h2>Projets Techniques (BUT GEII)</h2><ul><li><b>SmartCar :</b> Conception hardware/software via STM32 pilotée par Bluetooth [cite: 55, 56, 57].</li><li><b>Station de tri :</b> Automate Siemens programmé en Ladder via TIA Portal [cite: 208, 210].</li><li><b>Capteur RF :</b> Identification de fluides par analyse spectrale[cite: 59, 61].</li></ul>`,
+            contact: `<h2>Contact Transmission</h2><p>Email : fabreclement498@gmail.com [cite: 17]</p><p>Tel : 06 34 31 05 22 [cite: 18]</p><p>Localisation : Labarthe-sur-Lèze [cite: 15]</p>`
+        };
+
+        window.showContent = (id) => {
+            document.getElementById('modal-body').innerHTML = sections[id];
+            document.getElementById('content-modal').style.display = 'block';
+            if(id === 'exp') toggleArmoire(true);
+        };
+
+        window.closeModal = () => {
+            document.getElementById('content-modal').style.display = 'none';
+            toggleArmoire(false);
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.2, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 2));
+            const sun = new THREE.DirectionalLight(0xffffff, 3);
+            sun.position.set(5, 10, 5);
+            scene.add(sun);
+
+            loader.load('renault5.glb', (gltf) => {
+                car = gltf.scene;
+                const box = new THREE.Box3().setFromObject(car);
+                car.position.sub(box.getCenter(new THREE.Vector3()));
+                scene.add(car);
+            });
+
+            // Pré-chargement de l'armoire (cachée au début)
+            loader.load('armoire.glb', (gltf) => {
+                armoire = gltf.scene;
+                armoire.scale.set(0.4, 0.4, 0.4);
+                armoire.position.set(1, 0, -1); 
+                armoire.visible = false;
+                scene.add(armoire);
+            });
+
+            animate();
+        }
+
+        function toggleArmoire(visible) { if(armoire) armoire.visible = visible; }
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isInside) {
+                mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
+                mouse.y = (e.clientY / window.innerHeight - 0.5) * 1;
+            }
+        });
+
+        window.addEventListener('click', () => {
+            if (!isInside && car) {
+                isInside = true;
+                zoomIn();
+            }
+        });
+
+        function zoomIn() {
+            document.getElementById('home-ui').style.opacity = '0';
+            const duration = 2000;
+            const startPos = { z: camera.position.z, y: camera.position.y };
+            const startTime = performance.now();
+
+            function step(now) {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 4);
+
+                // POSITION DE CONDUITE (Ajustée pour le volant)
+                camera.position.z = startPos.z - (startPos.z - 0.15) * ease;
+                camera.position.y = startPos.y - (startPos.y - 0.45) * ease;
+                camera.position.x = -0.38 * ease; // Décalage vers le volant (gauche)
+
+                if (progress < 1) requestAnimationFrame(step);
+                else {
+                    const ui = document.getElementById('cockpit-ui');
+                    ui.style.display = 'flex';
+                    setTimeout(() => ui.style.opacity = '1', 50);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (car && !isInside) {
+                car.rotation.y += (mouse.x - car.rotation.y) * 0.05;
+                car.rotation.x += (mouse.y - car.rotation.x) * 0.05;
+            }
+            if (armoire && armoire.visible) armoire.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
