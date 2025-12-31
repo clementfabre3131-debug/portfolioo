@@ -2,93 +2,71 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Clément Fabre | Cockpit Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clément Fabre | Automotive Engineer Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;600&display=swap');
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+        :root { --accent: #fbbf24; --bg: #050505; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Inter', sans-serif; color: white; }
         canvas { display: block; }
 
-        /* HUD Accueil */
-        #home-ui {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            pointer-events: none;
-            transition: opacity 0.8s;
-            z-index: 100;
+        /* Interface Overlay */
+        .overlay {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+            pointer-events: none; transition: all 1s ease;
         }
-        .title { font-family: 'Syncopate', sans-serif; font-size: 3rem; letter-spacing: 12px; margin: 0; }
-        .hint { color: #fbbf24; font-size: 10px; margin-top: 20px; letter-spacing: 4px; animation: blink 2s infinite; }
 
-        /* Menu Cockpit */
-        #cockpit-ui {
-            position: absolute;
-            inset: 0;
-            display: none;
-            opacity: 0;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-            transition: opacity 1s;
-        }
-        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .btn-3d {
-            width: 180px; padding: 15px;
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid #fbbf24;
-            color: #fbbf24;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: 0.3s;
-        }
-        .btn-3d:hover { background: #fbbf24; color: black; transform: scale(1.1); }
+        /* Accueil */
+        #hero-text h1 { font-family: 'Syncopate', sans-serif; font-size: 4vw; letter-spacing: 15px; margin: 0; text-transform: uppercase; }
+        #hero-text p { font-size: 12px; letter-spacing: 5px; color: var(--accent); margin-top: 20px; animation: pulse 2s infinite; }
 
-        /* Fenêtre de contenu */
-        #content-modal {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%; max-width: 600px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid #fbbf24;
-            padding: 30px;
-            display: none;
-            color: white;
-            z-index: 200;
-            backdrop-filter: blur(15px);
+        /* Menu Cockpit Style "Eki" */
+        #cockpit-nav {
+            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+            display: none; gap: 15px; z-index: 20; opacity: 0;
         }
-        .close-btn { position: absolute; top: 10px; right: 20px; color: #fbbf24; cursor: pointer; font-size: 24px; }
-        h2 { color: #fbbf24; text-transform: uppercase; font-family: 'Syncopate'; font-size: 1.2rem; }
-        li { margin-bottom: 10px; font-size: 0.9rem; }
+        .nav-card {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 25px; border-radius: 12px; backdrop-filter: blur(10px);
+            cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto; text-transform: uppercase; font-size: 11px; font-weight: 600; letter-spacing: 2px;
+        }
+        .nav-card:hover { background: var(--accent); color: black; transform: translateY(-10px); }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+        /* Fenêtre Contenu Dynamique */
+        #content-side {
+            position: absolute; right: -50%; top: 15%; width: 350px;
+            background: rgba(0,0,0,0.8); border-left: 3px solid var(--accent);
+            padding: 40px; height: 70%; transition: 0.8s ease; z-index: 30; overflow-y: auto;
+        }
+        #content-side.active { right: 5%; }
+        h2 { font-family: 'Syncopate'; color: var(--accent); font-size: 1.2rem; margin-bottom: 20px; }
+        .close-btn { cursor: pointer; float: right; color: var(--accent); }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div id="home-ui">
-        <h1 class="title">R5 TURBO 3E</h1>
-        <p class="hint">CLIQUEZ POUR PRENDRE LE VOLANT</p>
+    <div id="hero-text" class="overlay">
+        <h1>R5 TURBO 3E</h1>
+        <p>CLIQUEZ POUR ENTRER</p>
     </div>
 
-    <div id="cockpit-ui">
-        <div class="grid-menu">
-            <button class="btn-3d" onclick="showContent('profil')">Profil</button>
-            <button class="btn-3d" onclick="showContent('exp')">Missions Renault</button>
-            <button class="btn-3d" onclick="showContent('projets')">Projets BUT</button>
-            <button class="btn-3d" onclick="showContent('contact')">Contact</button>
-        </div>
+    <div id="cockpit-nav">
+        <div class="nav-card" onclick="openContent('profil')">Profil</div>
+        <div class="nav-card" onclick="openContent('renault')">Missions</div>
+        <div class="nav-card" onclick="openContent('projets')">Projets</div>
+        <div class="nav-card" onclick="openContent('contact')">Contact</div>
     </div>
 
-    <div id="content-modal">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <div id="modal-body"></div>
+    <div id="content-side">
+        <span class="close-btn" onclick="closeContent()">✕ FERMER</span>
+        <div id="side-body"></div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
@@ -98,124 +76,106 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         let scene, camera, renderer, car, armoire, isInside = false;
-        const mouse = { x: 0, y: 0 };
         const loader = new GLTFLoader();
 
-        const sections = {
-            profil: `<h2>Profil</h2><p>Clément Fabre, 20 ans. Étudiant en école d'ingénieur S3E au CESI. Expertise en analyse de circuits, programmation et systèmes embarqués. Rigoureux et proactif.</p>`,
-            exp: `<h2>Renault Lardy (Trescal)</h2><ul><li>Étude des Power Electronic Blocks (PEB) des véhicules électriques.</li><li>Pilotage et installation de bancs d'essai de cyclage batterie.</li><li>Gestion d'armoires électriques de test et bureau d'études.</li></ul>`,
-            projets: `<h2>Projets BUT GEII</h2><ul><li><b>SmartCar :</b> Voiture pilotée par Bluetooth via microcontrôleur STM32.</li><li><b>Station de tri :</b> Automatisation via TIA Portal (Ladder) et interface HMI.</li><li><b>Analyse RF :</b> Caractérisation de circuits et identification de fluides.</li></ul>`,
-            contact: `<h2>Contact</h2><p>Email: fabreclement498@gmail.com</p><p>Tel: 06 34 31 05 22</p><p>Localisation: Labarthe-sur-Lèze (31)</p>`
-        };
-
-        window.showContent = (id) => {
-            document.getElementById('modal-body').innerHTML = sections[id];
-            document.getElementById('content-modal').style.display = 'block';
-            
-            // Si c'est Renault, on affiche l'armoire devant nous
-            if (id === 'exp' && armoire) {
-                armoire.visible = true;
-                // Positionnée devant le pare-brise
-                armoire.position.set(-0.4, 0.4, -0.6); 
-            } else if (armoire) {
-                armoire.visible = false;
-            }
-        };
-
-        window.closeModal = () => {
-            document.getElementById('content-modal').style.display = 'none';
-            if(armoire) armoire.visible = false;
+        const data = {
+            profil: `<h2>Clément Fabre</h2><p>20 ans, Apprenti Ingénieur CESI. Passionné par l'électronique de puissance et l'automobile.</p>`,
+            renault: `<h2>Renault Lardy</h2><p>Missions chez Trescal : Power Electronic Blocks, bancs d'essais cyclage batterie et expertise HF.</p>`,
+            projets: `<h2>Projets BUT</h2><p>SmartCar STM32, Automatisme TIA Portal, Capteur de liquidité RF.</p>`,
+            contact: `<h2>Contact</h2><p>📍 Labarthe-sur-Lèze<br>📞 06 34 31 05 22<br>📧 fabreclement498@gmail.com</p>`
         };
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.2, 5);
+            camera.position.set(0, 1.5, 6);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.toneMapping = THREE.ReinhardToneMapping;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 2));
-            const sun = new THREE.DirectionalLight(0xffffff, 3);
-            sun.position.set(5, 10, 5);
-            scene.add(sun);
+            // Éclairage "Cinématique"
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const spot = new THREE.SpotLight(0xfbbf24, 10);
+            spot.position.set(5, 10, 5);
+            scene.add(spot);
 
-            // R5 Turbo 3E
+            // Chargement R5
             loader.load('renault5.glb', (gltf) => {
                 car = gltf.scene;
-                const box = new THREE.Box3().setFromObject(car);
-                car.position.sub(box.getCenter(new THREE.Vector3()));
                 scene.add(car);
             });
 
-            // Armoire Électrique (masquée par défaut)
+            // Chargement Armoire
             loader.load('armoire.glb', (gltf) => {
                 armoire = gltf.scene;
-                armoire.scale.set(0.15, 0.15, 0.15); // Petite échelle pour la voir devant soi
+                armoire.scale.set(0.12, 0.12, 0.12);
                 armoire.visible = false;
                 scene.add(armoire);
             });
 
+            window.addEventListener('click', onEnter);
             animate();
         }
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isInside) {
-                mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
-                mouse.y = (e.clientY / window.innerHeight - 0.5) * 1;
-            }
-        });
+        function onEnter() {
+            if (isInside) return;
+            isInside = true;
 
-        window.addEventListener('click', () => {
-            if (!isInside && car) {
-                isInside = true;
-                zoomIn();
-            }
-        });
+            // Disparition texte accueil
+            gsap.to("#hero-text", { opacity: 0, duration: 0.5 });
 
-        function zoomIn() {
-            document.getElementById('home-ui').style.opacity = '0';
-            const duration = 2000;
-            const startPos = { z: camera.position.z, y: camera.position.y };
-            const startTime = performance.now();
-
-            function step(now) {
-                const progress = Math.min((now - startTime) / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 4);
-
-                // AVANCER DANS LE COCKPIT
-                camera.position.z = startPos.z - (startPos.z - 0.1) * ease;
-                camera.position.y = startPos.y - (startPos.y - 0.45) * ease;
-                camera.position.x = -0.35 * ease;
-
-                // ROTATION 180° POUR ÊTRE FACE AU VOLANT
-                camera.rotation.y = Math.PI * ease; 
-
-                if (progress < 1) requestAnimationFrame(step);
-                else {
-                    const ui = document.getElementById('cockpit-ui');
-                    ui.style.display = 'flex';
-                    setTimeout(() => ui.style.opacity = '1', 50);
+            // Animation Caméra GSAP (Vue conducteur parfaite)
+            gsap.to(camera.position, { x: -0.38, y: 0.85, z: 0.2, duration: 2.5, ease: "power4.inOut" });
+            
+            // Rotation vers l'avant (Face au volant)
+            gsap.to(camera.rotation, { 
+                y: Math.PI, 
+                duration: 2.5, 
+                ease: "power4.inOut",
+                onComplete: () => {
+                    document.getElementById('cockpit-nav').style.display = 'flex';
+                    gsap.to("#cockpit-nav", { opacity: 1, bottom: "15%", duration: 1 });
                 }
-            }
-            requestAnimationFrame(step);
+            });
         }
+
+        window.openContent = (id) => {
+            document.getElementById('side-body').innerHTML = data[id];
+            document.getElementById('content-side').classList.add('active');
+            
+            if (id === 'renault') {
+                armoire.visible = true;
+                armoire.position.set(0.4, 0.4, -0.8); // Apparaît côté passager
+                gsap.from(armoire.scale, { x:0, y:0, z:0, duration: 1, ease: "back.out" });
+            } else {
+                armoire.visible = false;
+            }
+        };
+
+        window.closeContent = () => {
+            document.getElementById('content-side').classList.remove('active');
+            if(armoire) armoire.visible = false;
+        };
 
         function animate() {
             requestAnimationFrame(animate);
             if (car && !isInside) {
-                car.rotation.y += (mouse.x - car.rotation.y) * 0.05;
-                car.rotation.x += (mouse.y - car.rotation.x) * 0.05;
+                car.rotation.y += 0.002; // Rotation légère auto
             }
-            // Rotation automatique de l'armoire quand elle est visible
             if (armoire && armoire.visible) {
-                armoire.rotation.y += 0.02;
+                armoire.rotation.y += 0.01;
             }
             renderer.render(scene, camera);
         }
 
         init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
