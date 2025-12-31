@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Clément Fabre | Automotive Interface</title>
+    <title>Clément Fabre | Cockpit Interface</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;600&display=swap');
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
@@ -47,21 +47,23 @@
         }
         .btn-3d:hover { background: #fbbf24; color: black; transform: scale(1.1); }
 
-        /* Fenêtre de contenu (Modale) */
+        /* Fenêtre de contenu */
         #content-modal {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%; max-width: 900px;
-            background: rgba(0, 0, 0, 0.9);
+            width: 70%; max-width: 600px;
+            background: rgba(0, 0, 0, 0.85);
             border: 1px solid #fbbf24;
-            padding: 40px;
+            padding: 30px;
             display: none;
             color: white;
             z-index: 200;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
         }
         .close-btn { position: absolute; top: 10px; right: 20px; color: #fbbf24; cursor: pointer; font-size: 24px; }
+        h2 { color: #fbbf24; text-transform: uppercase; font-family: 'Syncopate'; font-size: 1.2rem; }
+        li { margin-bottom: 10px; font-size: 0.9rem; }
 
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     </style>
@@ -100,21 +102,29 @@
         const loader = new GLTFLoader();
 
         const sections = {
-            profil: `<h2>Clément Fabre</h2><p>Étudiant en 3ème année d'école d'ingénieur au CESI (S3E)[cite: 8]. Spécialisé en Systèmes Embarqués & Électronique[cite: 2]. Atouts : Rigueur, autonomie et proactivité[cite: 46, 249].</p>`,
-            exp: `<h2>Expérience Renault Lardy (Trescal)</h2><p>Ingénieur d'Études en alternance (2025-2028)[cite: 23, 24, 31]. Missions :</p><ul><li>Étude technique sur les Power Electronic Blocks [cite: 32].</li><li>Pilotage de modification de bancs d'essai de cyclage batterie [cite: 33].</li><li>Étude des cycleurs et simulateurs de batterie[cite: 31].</li></ul><p><i>Visualisez l'armoire électrique de test en 3D dans le cockpit.</i></p>`,
-            projets: `<h2>Projets Techniques (BUT GEII)</h2><ul><li><b>SmartCar :</b> Conception hardware/software via STM32 pilotée par Bluetooth [cite: 55, 56, 57].</li><li><b>Station de tri :</b> Automate Siemens programmé en Ladder via TIA Portal [cite: 208, 210].</li><li><b>Capteur RF :</b> Identification de fluides par analyse spectrale[cite: 59, 61].</li></ul>`,
-            contact: `<h2>Contact Transmission</h2><p>Email : fabreclement498@gmail.com [cite: 17]</p><p>Tel : 06 34 31 05 22 [cite: 18]</p><p>Localisation : Labarthe-sur-Lèze [cite: 15]</p>`
+            profil: `<h2>Profil</h2><p>Clément Fabre, 20 ans. Étudiant en école d'ingénieur S3E au CESI. Expertise en analyse de circuits, programmation et systèmes embarqués. Rigoureux et proactif.</p>`,
+            exp: `<h2>Renault Lardy (Trescal)</h2><ul><li>Étude des Power Electronic Blocks (PEB) des véhicules électriques.</li><li>Pilotage et installation de bancs d'essai de cyclage batterie.</li><li>Gestion d'armoires électriques de test et bureau d'études.</li></ul>`,
+            projets: `<h2>Projets BUT GEII</h2><ul><li><b>SmartCar :</b> Voiture pilotée par Bluetooth via microcontrôleur STM32.</li><li><b>Station de tri :</b> Automatisation via TIA Portal (Ladder) et interface HMI.</li><li><b>Analyse RF :</b> Caractérisation de circuits et identification de fluides.</li></ul>`,
+            contact: `<h2>Contact</h2><p>Email: fabreclement498@gmail.com</p><p>Tel: 06 34 31 05 22</p><p>Localisation: Labarthe-sur-Lèze (31)</p>`
         };
 
         window.showContent = (id) => {
             document.getElementById('modal-body').innerHTML = sections[id];
             document.getElementById('content-modal').style.display = 'block';
-            if(id === 'exp') toggleArmoire(true);
+            
+            // Si c'est Renault, on affiche l'armoire devant nous
+            if (id === 'exp' && armoire) {
+                armoire.visible = true;
+                // Positionnée devant le pare-brise
+                armoire.position.set(-0.4, 0.4, -0.6); 
+            } else if (armoire) {
+                armoire.visible = false;
+            }
         };
 
         window.closeModal = () => {
             document.getElementById('content-modal').style.display = 'none';
-            toggleArmoire(false);
+            if(armoire) armoire.visible = false;
         };
 
         function init() {
@@ -131,6 +141,7 @@
             sun.position.set(5, 10, 5);
             scene.add(sun);
 
+            // R5 Turbo 3E
             loader.load('renault5.glb', (gltf) => {
                 car = gltf.scene;
                 const box = new THREE.Box3().setFromObject(car);
@@ -138,19 +149,16 @@
                 scene.add(car);
             });
 
-            // Pré-chargement de l'armoire (cachée au début)
+            // Armoire Électrique (masquée par défaut)
             loader.load('armoire.glb', (gltf) => {
                 armoire = gltf.scene;
-                armoire.scale.set(0.4, 0.4, 0.4);
-                armoire.position.set(1, 0, -1); 
+                armoire.scale.set(0.15, 0.15, 0.15); // Petite échelle pour la voir devant soi
                 armoire.visible = false;
                 scene.add(armoire);
             });
 
             animate();
         }
-
-        function toggleArmoire(visible) { if(armoire) armoire.visible = visible; }
 
         window.addEventListener('mousemove', (e) => {
             if (!isInside) {
@@ -176,10 +184,13 @@
                 const progress = Math.min((now - startTime) / duration, 1);
                 const ease = 1 - Math.pow(1 - progress, 4);
 
-                // POSITION DE CONDUITE (Ajustée pour le volant)
-                camera.position.z = startPos.z - (startPos.z - 0.15) * ease;
+                // AVANCER DANS LE COCKPIT
+                camera.position.z = startPos.z - (startPos.z - 0.1) * ease;
                 camera.position.y = startPos.y - (startPos.y - 0.45) * ease;
-                camera.position.x = -0.38 * ease; // Décalage vers le volant (gauche)
+                camera.position.x = -0.35 * ease;
+
+                // ROTATION 180° POUR ÊTRE FACE AU VOLANT
+                camera.rotation.y = Math.PI * ease; 
 
                 if (progress < 1) requestAnimationFrame(step);
                 else {
@@ -197,7 +208,10 @@
                 car.rotation.y += (mouse.x - car.rotation.y) * 0.05;
                 car.rotation.x += (mouse.y - car.rotation.x) * 0.05;
             }
-            if (armoire && armoire.visible) armoire.rotation.y += 0.01;
+            // Rotation automatique de l'armoire quand elle est visible
+            if (armoire && armoire.visible) {
+                armoire.rotation.y += 0.02;
+            }
             renderer.render(scene, camera);
         }
 
